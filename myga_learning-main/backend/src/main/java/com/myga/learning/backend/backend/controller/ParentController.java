@@ -1,63 +1,55 @@
 package com.myga.learning.backend.backend.controller;
 
-import com.myga.learning.backend.backend.models.Parent;
+import com.myga.learning.backend.backend.dto.ParentRequest;
+import com.myga.learning.backend.backend.dto.ParentResponse;
+import com.myga.learning.backend.backend.service.ParentService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import com.myga.learning.backend.backend.repositories.ParentRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
-
-import org.springframework.web.bind.annotation.*;
-
+import javax.validation.Valid;
 import java.util.List;
 
-
 @RestController
+@RequestMapping("/api/parents")
 public class ParentController {
 
+    private final ParentService parentService;
 
-    @Autowired
-    ParentRepository ParentRepository;
-
-
-
-    @GetMapping("/Parents")
-    public List<Parent> findAll(){
-        return this.ParentRepository.findAll();
-
-    }
-    @GetMapping("/Parents/{phone}")
-    public Parent findById(@PathVariable Long phone) throws Exception{
-        return (Parent) this.ParentRepository.findById(phone).orElseThrow(()-> new Exception("n'existe pas"));
-
-    }
-    @PostMapping("/Parents")
-    public Parent saveParent(@RequestBody Parent Parent){
-        return this.ParentRepository.save(Parent);
+    public ParentController(ParentService parentService) {
+        this.parentService = parentService;
     }
 
-    @PutMapping("/Parents/{phone}")
-    Parent updateOrSaveParent(@RequestBody Parent Parent, @PathVariable Long phone) {
-        return this.ParentRepository.findById(phone).map(x->{
-            x.setNom(Parent.getNom());
-            x.setPrenom(Parent.getPrenom());
-            x.setEmail(Parent.getEmail());
-            return ParentRepository.save(x);
-        }).orElseGet(()->{
-            Parent.setPhone(phone);
-            return ParentRepository.save(Parent);
-        });
-    }
-    @DeleteMapping("/Parents/{phone}")
-    void deleteParent(@PathVariable Long phone) {
-        this.ParentRepository.deleteById(phone);
+    @GetMapping
+    public List<ParentResponse> findAll() {
+        return parentService.findAll();
     }
 
-
-
+    @GetMapping("/{phone}")
+    public ParentResponse findByPhone(@PathVariable Long phone) {
+        return parentService.findByPhone(phone);
     }
 
+    @PostMapping
+    public ResponseEntity<ParentResponse> create(@Valid @RequestBody ParentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(parentService.create(request));
+    }
 
+    @PutMapping("/{phone}")
+    public ParentResponse update(@PathVariable Long phone, @Valid @RequestBody ParentRequest request) {
+        return parentService.update(phone, request);
+    }
 
-
-
-
+    @DeleteMapping("/{phone}")
+    public ResponseEntity<Void> delete(@PathVariable Long phone) {
+        parentService.delete(phone);
+        return ResponseEntity.noContent().build();
+    }
+}

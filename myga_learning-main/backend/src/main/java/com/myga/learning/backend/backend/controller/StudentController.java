@@ -1,50 +1,55 @@
 package com.myga.learning.backend.backend.controller;
 
-import com.myga.learning.backend.backend.models.Student;
-import com.myga.learning.backend.backend.repositories.StudentRepository;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.*;
+import com.myga.learning.backend.backend.dto.StudentRequest;
+import com.myga.learning.backend.backend.dto.StudentResponse;
+import com.myga.learning.backend.backend.service.StudentService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
+import javax.validation.Valid;
 import java.util.List;
 
 @RestController
+@RequestMapping("/api/students")
 public class StudentController {
 
+    private final StudentService studentService;
 
-    @Autowired
-    StudentRepository StudentRepository;
-
-
-
-    @GetMapping("/Students")
-    public List<Student> findAll(){
-        return this.StudentRepository.findAll();
-
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
     }
 
-    @GetMapping("/Students/{id}")
-    public  Student findById( @PathVariable Long id) throws Exception{
-        return this.StudentRepository.findById(id).orElseThrow(()-> new Exception("n'existe pas"));
+    @GetMapping
+    public List<StudentResponse> findAll() {
+        return studentService.findAll();
+    }
 
+    @GetMapping("/{id}")
+    public StudentResponse findById(@PathVariable Long id) {
+        return studentService.findById(id);
     }
-    @PostMapping("/Students")
-    public Student saveStudent(@RequestBody Student Student){
-        return this.StudentRepository.save(Student);
+
+    @PostMapping
+    public ResponseEntity<StudentResponse> create(@Valid @RequestBody StudentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(studentService.create(request));
     }
-    @PutMapping("/Students/{id}")
-     Student updateOrSaveStudent(@RequestBody Student Student, @PathVariable Long id) {
-        return this.StudentRepository.findById(id).map(x->{
-            x.setNom(Student.getNom());
-            x.setPrenom(Student.getPrenom());
-            x.setAge(Student.getAge());
-            return StudentRepository.save(x);
-        }).orElseGet(()->{
-            Student.setId(id);
-            return StudentRepository.save(Student);
-        });
+
+    @PutMapping("/{id}")
+    public StudentResponse update(@PathVariable Long id, @Valid @RequestBody StudentRequest request) {
+        return studentService.update(id, request);
     }
-    @DeleteMapping("/Students/{id}")
-    void deleteStudent(@PathVariable Long id) {
-        this.StudentRepository.deleteById(id);
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        studentService.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
