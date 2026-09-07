@@ -55,6 +55,10 @@ public class SecurityConfig {
                     // ownership.
                     .antMatchers(HttpMethod.POST, "/api/grades").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/attendance", "/api/attendance/**").hasAnyRole("ADMIN", "TEACHER")
+                    // Every user manages their own notifications (ownership in service).
+                    .antMatchers(HttpMethod.PUT, "/api/notifications/**").hasAnyRole("ADMIN", "TEACHER", "PARENT")
+                    // The full announcement list is an admin management view; /me is open to all.
+                    .antMatchers(HttpMethod.GET, "/api/announcements").hasRole("ADMIN")
                     // Reads are open to any authenticated role; ownership on
                     // sensitive reads (e.g. a student's grades) is enforced in
                     // the service layer, not by the URL alone.

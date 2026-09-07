@@ -9,6 +9,7 @@ import com.myga.learning.backend.backend.mapper.AttendanceMapper;
 import com.myga.learning.backend.backend.models.Attendance;
 import com.myga.learning.backend.backend.models.AttendanceStatus;
 import com.myga.learning.backend.backend.models.Classe;
+import com.myga.learning.backend.backend.models.NotificationType;
 import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.models.Subject;
 import com.myga.learning.backend.backend.models.Teacher;
@@ -41,19 +42,22 @@ public class AttendanceService {
     private final SubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
     public AttendanceService(AttendanceRepository attendanceRepository,
                              StudentRepository studentRepository,
                              ClasseRepository classeRepository,
                              SubjectRepository subjectRepository,
                              TeacherRepository teacherRepository,
-                             CurrentUserService currentUserService) {
+                             CurrentUserService currentUserService,
+                             NotificationService notificationService) {
         this.attendanceRepository = attendanceRepository;
         this.studentRepository = studentRepository;
         this.classeRepository = classeRepository;
         this.subjectRepository = subjectRepository;
         this.teacherRepository = teacherRepository;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     public AttendanceResponse record(AttendanceRequest request) {
@@ -64,7 +68,9 @@ public class AttendanceService {
 
         Attendance attendance = build(student, classe, teacher, subject,
                 request.getDate(), request.getStatus(), request.getNote());
-        return AttendanceMapper.toResponse(attendanceRepository.save(attendance));
+        Attendance saved = attendanceRepository.save(attendance);
+        notifyIfAbsent(saved);
+        return AttendanceMapper.toResponse(saved);
     }
 
     public List<AttendanceResponse> markClass(AttendanceBulkRequest request) {
@@ -78,9 +84,23 @@ public class AttendanceService {
             Student student = getStudentInClass(entry.getStudentId(), classe);
             toSave.add(build(student, classe, teacher, subject, date, entry.getStatus(), entry.getNote()));
         }
-        return attendanceRepository.saveAll(toSave).stream()
+        List<Attendance> saved = attendanceRepository.saveAll(toSave);
+        saved.forEach(this::notifyIfAbsent);
+        return saved.stream()
                 .map(AttendanceMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /** Notify the student's parents when they are marked absent. */
+    private void notifyIfAbsent(Attendance attendance) {
+        if (attendance.getStatus() != AttendanceStatus.ABSENT) {
+            return;
+        }
+        Student student = attendance.getStudent();
+        notificationService.notifyStudentParents(student, NotificationType.NEW_ABSENCE,
+                "Absence recorded",
+                student.getPrenom() + " " + student.getNom()
+                        + " was marked absent on " + attendance.getDate() + ".");
     }
 
     @Transactional(readOnly = true)

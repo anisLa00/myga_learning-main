@@ -5,6 +5,7 @@ import com.myga.learning.backend.backend.dto.GradeResponse;
 import com.myga.learning.backend.backend.exception.ResourceNotFoundException;
 import com.myga.learning.backend.backend.mapper.GradeMapper;
 import com.myga.learning.backend.backend.models.Grade;
+import com.myga.learning.backend.backend.models.NotificationType;
 import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.models.Subject;
 import com.myga.learning.backend.backend.models.Teacher;
@@ -37,17 +38,20 @@ public class GradeService {
     private final SubjectRepository subjectRepository;
     private final TeacherRepository teacherRepository;
     private final CurrentUserService currentUserService;
+    private final NotificationService notificationService;
 
     public GradeService(GradeRepository gradeRepository,
                         StudentRepository studentRepository,
                         SubjectRepository subjectRepository,
                         TeacherRepository teacherRepository,
-                        CurrentUserService currentUserService) {
+                        CurrentUserService currentUserService,
+                        NotificationService notificationService) {
         this.gradeRepository = gradeRepository;
         this.studentRepository = studentRepository;
         this.subjectRepository = subjectRepository;
         this.teacherRepository = teacherRepository;
         this.currentUserService = currentUserService;
+        this.notificationService = notificationService;
     }
 
     public GradeResponse create(GradeRequest request) {
@@ -66,7 +70,14 @@ public class GradeService {
         grade.setMaxValue(request.getMaxValue());
         grade.setComment(request.getComment());
         grade.setDate(request.getDate() != null ? request.getDate() : LocalDate.now());
-        return GradeMapper.toResponse(gradeRepository.save(grade));
+        Grade saved = gradeRepository.save(grade);
+
+        notificationService.notifyStudentParents(student, NotificationType.NEW_GRADE,
+                "New grade in " + subject.getNom(),
+                student.getPrenom() + " " + student.getNom() + " received "
+                        + saved.getValue() + "/" + saved.getMaxValue() + " in " + subject.getNom() + ".");
+
+        return GradeMapper.toResponse(saved);
     }
 
     @Transactional(readOnly = true)
