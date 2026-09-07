@@ -4,9 +4,7 @@ import com.myga.learning.backend.backend.dto.GradeRequest;
 import com.myga.learning.backend.backend.dto.GradeResponse;
 import com.myga.learning.backend.backend.exception.ResourceNotFoundException;
 import com.myga.learning.backend.backend.mapper.GradeMapper;
-import com.myga.learning.backend.backend.models.Classe;
 import com.myga.learning.backend.backend.models.Grade;
-import com.myga.learning.backend.backend.models.Parent;
 import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.models.Subject;
 import com.myga.learning.backend.backend.models.Teacher;
@@ -75,7 +73,7 @@ public class GradeService {
     public List<GradeResponse> getStudentGrades(Long studentId) {
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> ResourceNotFoundException.of("Student", studentId));
-        authoriseReadStudent(student);
+        currentUserService.ensureCanReadStudent(student);
         return gradeRepository.findByStudent_Id(studentId).stream()
                 .map(GradeMapper::toResponse)
                 .collect(Collectors.toList());
@@ -89,7 +87,7 @@ public class GradeService {
             if (!assignedToSubject) {
                 throw new AccessDeniedException("You are not assigned to this subject");
             }
-            if (!teachesStudent(teacher, student)) {
+            if (!currentUserService.teacherTeachesStudent(teacher, student)) {
                 throw new AccessDeniedException("This student is not in one of your classes");
             }
             return teacher;
@@ -100,34 +98,5 @@ public class GradeService {
         }
         return teacherRepository.findById(request.getTeacherId())
                 .orElseThrow(() -> ResourceNotFoundException.of("Teacher", request.getTeacherId()));
-    }
-
-    private void authoriseReadStudent(Student student) {
-        if (currentUserService.hasRole("ADMIN")) {
-            return;
-        }
-        if (currentUserService.hasRole("PARENT")) {
-            Parent parent = currentUserService.getCurrentParent();
-            boolean ownsChild = parent.getStudents() != null && parent.getStudents().stream()
-                    .anyMatch(s -> s.getId().equals(student.getId()));
-            if (!ownsChild) {
-                throw new AccessDeniedException("This student is not one of your children");
-            }
-            return;
-        }
-        if (currentUserService.hasRole("TEACHER")) {
-            Teacher teacher = currentUserService.getCurrentTeacher();
-            if (!teachesStudent(teacher, student)) {
-                throw new AccessDeniedException("This student is not in one of your classes");
-            }
-            return;
-        }
-        throw new AccessDeniedException("Not allowed to view this student's grades");
-    }
-
-    private boolean teachesStudent(Teacher teacher, Student student) {
-        Classe classe = student.getClasse();
-        return classe != null && teacher.getClasses().stream()
-                .anyMatch(c -> c.getId().equals(classe.getId()));
     }
 }

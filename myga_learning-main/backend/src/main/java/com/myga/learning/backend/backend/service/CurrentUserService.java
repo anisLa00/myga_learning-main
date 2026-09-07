@@ -1,6 +1,8 @@
 package com.myga.learning.backend.backend.service;
 
+import com.myga.learning.backend.backend.models.Classe;
 import com.myga.learning.backend.backend.models.Parent;
+import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.models.Teacher;
 import com.myga.learning.backend.backend.models.User;
 import com.myga.learning.backend.backend.repositories.ParentRepository;
@@ -57,5 +59,45 @@ public class CurrentUserService {
     public boolean hasRole(String role) {
         return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_" + role));
+    }
+
+    /**
+     * Shared read-ownership rule for a student's academic data (grades,
+     * attendance, ...): admins see everyone, a parent only their own children,
+     * a teacher only students in their assigned classes. Throws
+     * {@link AccessDeniedException} otherwise.
+     */
+    public void ensureCanReadStudent(Student student) {
+        if (hasRole("ADMIN")) {
+            return;
+        }
+        if (hasRole("PARENT")) {
+            Parent parent = getCurrentParent();
+            boolean ownsChild = parent.getStudents() != null && parent.getStudents().stream()
+                    .anyMatch(s -> s.getId().equals(student.getId()));
+            if (!ownsChild) {
+                throw new AccessDeniedException("This student is not one of your children");
+            }
+            return;
+        }
+        if (hasRole("TEACHER")) {
+            if (!teacherTeachesStudent(getCurrentTeacher(), student)) {
+                throw new AccessDeniedException("This student is not in one of your classes");
+            }
+            return;
+        }
+        throw new AccessDeniedException("Not allowed to access this student's data");
+    }
+
+    /** True when the student's class is one of the teacher's assigned classes. */
+    public boolean teacherTeachesStudent(Teacher teacher, Student student) {
+        Classe classe = student.getClasse();
+        return classe != null && teacherTeachesClasse(teacher, classe.getId());
+    }
+
+    /** True when the teacher is assigned to the given class. */
+    public boolean teacherTeachesClasse(Teacher teacher, Long classeId) {
+        return classeId != null && teacher.getClasses().stream()
+                .anyMatch(c -> c.getId().equals(classeId));
     }
 }
