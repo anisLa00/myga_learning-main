@@ -1,52 +1,33 @@
 package com.myga.learning.backend.backend.models;
 
-import lombok.*;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import javax.persistence.*;
 import java.util.List;
 
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Getter
-@Setter
 @Entity
-public class Student  {
+public class Student {
+
     @Id
-    @GeneratedValue(strategy=GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
+
     private String nom;
     private String prenom;
-    private int Age;
+    private int age;
 
     @ManyToOne
     @JoinColumn(name = "classe_id")
-    private Classe Classe;
+    @JsonIgnoreProperties("students")
+    private Classe classe;
 
-    public com.myga.learning.backend.backend.models.Classe getClasse() {
-        return Classe;
-    }
-
-    public void setClasse(com.myga.learning.backend.backend.models.Classe classe) {
-        Classe = classe;
-    }
-    @ManyToMany(mappedBy = "Students")
-    private List<Parent> Parents;
-
-
-
-
-
-    public List<Parent> getParents() {
-        return Parents;
-    }
-
-    public void setParents(List<Parent> parents) {
-        Parents = parents;
-    }
-
-
-    
-
+    @ManyToMany(mappedBy = "students")
+    @JsonIgnoreProperties("students")
+    private List<Parent> parents;
 }
