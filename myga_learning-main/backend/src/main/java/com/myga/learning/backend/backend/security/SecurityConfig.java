@@ -47,7 +47,17 @@ public class SecurityConfig {
                 .authorizeRequests()
                     .antMatchers("/api/auth/**").permitAll()
                     .antMatchers("/h2-console/**").permitAll()
+                    // Role-specific portals.
+                    .antMatchers("/api/parent/**").hasRole("PARENT")
+                    .antMatchers("/api/teacher/**").hasRole("TEACHER")
+                    // Grades may be recorded by an admin or a teacher; the
+                    // service enforces the teacher's own-assignment ownership.
+                    .antMatchers(HttpMethod.POST, "/api/grades").hasAnyRole("ADMIN", "TEACHER")
+                    // Reads are open to any authenticated role; ownership on
+                    // sensitive reads (e.g. a student's grades) is enforced in
+                    // the service layer, not by the URL alone.
                     .antMatchers(HttpMethod.GET, "/api/**").hasAnyRole("ADMIN", "TEACHER", "PARENT")
+                    // All other writes are administrator-only.
                     .antMatchers("/api/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 .and()

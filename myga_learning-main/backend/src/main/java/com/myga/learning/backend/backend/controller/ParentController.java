@@ -52,4 +52,10 @@ public class ParentController {
         parentService.delete(phone);
         return ResponseEntity.noContent().build();
     }
+
+    /** Link an existing student to this parent as one of their children (admin). */
+    @PostMapping("/{phone}/students/{studentId}")
+    public ParentResponse linkStudent(@PathVariable Long phone, @PathVariable Long studentId) {
+        return parentService.linkStudent(phone, studentId);
+    }
 }
