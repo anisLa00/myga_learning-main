@@ -56,6 +56,7 @@ public class SecurityConfig {
                     .antMatchers(HttpMethod.POST, "/api/grades").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/attendance", "/api/attendance/**").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/observations").hasAnyRole("ADMIN", "TEACHER")
+                    .antMatchers(HttpMethod.POST, "/api/assessments").hasAnyRole("ADMIN", "TEACHER")
                     // Every user manages their own notifications (ownership in service).
                     .antMatchers(HttpMethod.PUT, "/api/notifications/**").hasAnyRole("ADMIN", "TEACHER", "PARENT")
                     // The full announcement list is an admin management view; /me is open to all.

@@ -5,6 +5,7 @@ import com.myga.learning.backend.backend.dto.AnnouncementResponse;
 import com.myga.learning.backend.backend.dto.ChildAttendanceStatsResponse;
 import com.myga.learning.backend.backend.dto.ParentDashboardResponse;
 import com.myga.learning.backend.backend.dto.TeacherDashboardResponse;
+import com.myga.learning.backend.backend.mapper.AssessmentMapper;
 import com.myga.learning.backend.backend.mapper.AttendanceMapper;
 import com.myga.learning.backend.backend.mapper.ClasseMapper;
 import com.myga.learning.backend.backend.mapper.GradeMapper;
@@ -17,6 +18,7 @@ import com.myga.learning.backend.backend.models.Classe;
 import com.myga.learning.backend.backend.models.Parent;
 import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.models.Teacher;
+import com.myga.learning.backend.backend.repositories.AssessmentRepository;
 import com.myga.learning.backend.backend.repositories.AttendanceRepository;
 import com.myga.learning.backend.backend.repositories.ClasseRepository;
 import com.myga.learning.backend.backend.repositories.GradeRepository;
@@ -28,6 +30,7 @@ import com.myga.learning.backend.backend.repositories.TeacherRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -51,6 +54,7 @@ public class DashboardService {
     private final GradeRepository gradeRepository;
     private final AttendanceRepository attendanceRepository;
     private final ObservationRepository observationRepository;
+    private final AssessmentRepository assessmentRepository;
     private final CurrentUserService currentUserService;
     private final AnnouncementService announcementService;
     private final NotificationService notificationService;
@@ -63,6 +67,7 @@ public class DashboardService {
                             GradeRepository gradeRepository,
                             AttendanceRepository attendanceRepository,
                             ObservationRepository observationRepository,
+                            AssessmentRepository assessmentRepository,
                             CurrentUserService currentUserService,
                             AnnouncementService announcementService,
                             NotificationService notificationService) {
@@ -74,6 +79,7 @@ public class DashboardService {
         this.gradeRepository = gradeRepository;
         this.attendanceRepository = attendanceRepository;
         this.observationRepository = observationRepository;
+        this.assessmentRepository = assessmentRepository;
         this.currentUserService = currentUserService;
         this.announcementService = announcementService;
         this.notificationService = notificationService;
@@ -115,6 +121,9 @@ public class DashboardService {
                 .recentObservations(observationRepository
                         .findTop5ByTeacher_IdOrderByDateDescIdDesc(teacher.getId()).stream()
                         .map(ObservationMapper::toResponse).collect(Collectors.toList()))
+                .upcomingAssessments(assessmentRepository
+                        .findTop5ByTeacher_IdAndDateGreaterThanEqualOrderByDateAsc(teacher.getId(), LocalDate.now())
+                        .stream().map(AssessmentMapper::toResponse).collect(Collectors.toList()))
                 .announcements(limit(announcementService.findForCurrentUser()))
                 .unreadNotifications(notificationService.unreadCountMine())
                 .build();
@@ -138,10 +147,27 @@ public class DashboardService {
                     .latestGrades(Collections.emptyList())
                     .recentAbsences(Collections.emptyList())
                     .recentFeedback(Collections.emptyList())
+                    .upcomingAssessments(Collections.emptyList())
                     .build();
         }
 
+        // Upcoming assessments across the classes the children belong to.
+        List<Long> classeIds = children.stream()
+                .map(Student::getClasse)
+                .filter(c -> c != null)
+                .map(Classe::getId)
+                .distinct()
+                .collect(Collectors.toList());
+        List<com.myga.learning.backend.backend.dto.AssessmentResponse> upcoming = classeIds.stream()
+                .flatMap(id -> assessmentRepository
+                        .findByClasse_IdAndDateGreaterThanEqualOrderByDateAsc(id, LocalDate.now()).stream())
+                .sorted((a, b) -> a.getDate().compareTo(b.getDate()))
+                .limit(FEED_LIMIT)
+                .map(AssessmentMapper::toResponse)
+                .collect(Collectors.toList());
+
         return builder
+                .upcomingAssessments(upcoming)
                 .latestGrades(gradeRepository.findTop5ByStudent_IdInOrderByDateDescIdDesc(childIds).stream()
                         .map(GradeMapper::toResponse).collect(Collectors.toList()))
                 .recentAbsences(attendanceRepository

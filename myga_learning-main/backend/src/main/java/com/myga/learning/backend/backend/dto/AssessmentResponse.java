@@ -1,5 +1,6 @@
 package com.myga.learning.backend.backend.dto;
 
+import com.myga.learning.backend.backend.models.AssessmentType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,20 +12,19 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class GradeResponse {
+public class AssessmentResponse {
     private Long id;
-    private StudentSummaryResponse student;
+    private String title;
+    private String description;
     private SubjectResponse subject;
+    private ClasseSummaryResponse classe;
     private Long teacherId;
     private String teacherName;
-    private Long assessmentId;
-    private String assessmentTitle;
+    private AssessmentType type;
+    private LocalDate date;
+    private double maxGrade;
     private Long semesterId;
     private String semester;
     /** Derived from the semester. */
     private String academicYear;
-    private double value;
-    private double maxValue;
-    private String comment;
-    private LocalDate date;
 }

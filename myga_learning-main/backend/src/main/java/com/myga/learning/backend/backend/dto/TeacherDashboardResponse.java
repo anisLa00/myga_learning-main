@@ -20,6 +20,7 @@ public class TeacherDashboardResponse {
 
     private List<GradeResponse> recentGrades;
     private List<ObservationResponse> recentObservations;
+    private List<AssessmentResponse> upcomingAssessments;
     private List<AnnouncementResponse> announcements;
     private long unreadNotifications;
 }

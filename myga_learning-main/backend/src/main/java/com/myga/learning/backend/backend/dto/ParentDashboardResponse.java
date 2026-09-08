@@ -20,6 +20,7 @@ public class ParentDashboardResponse {
     private List<AttendanceResponse> recentAbsences;
     /** Parent-visible teacher feedback only. */
     private List<ObservationResponse> recentFeedback;
+    private List<AssessmentResponse> upcomingAssessments;
     private List<AnnouncementResponse> announcements;
     private long unreadNotifications;
 }

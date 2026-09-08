@@ -18,8 +18,17 @@ public class GradeRequest {
     @NotNull(message = "studentId is required")
     private Long studentId;
 
-    @NotNull(message = "subjectId is required")
+    /**
+     * Optional. When set, the subject, maximum grade and semester are taken
+     * from the assessment so they can never disagree with it.
+     */
+    private Long assessmentId;
+
+    /** Required unless {@code assessmentId} is provided. */
     private Long subjectId;
+
+    /** Optional; the academic year follows from the semester. */
+    private Long semesterId;
 
     /** Only honoured for ADMIN callers; ignored for teachers. */
     private Long teacherId;
@@ -28,7 +37,7 @@ public class GradeRequest {
     @PositiveOrZero(message = "value must be zero or positive")
     private Double value;
 
-    @NotNull(message = "maxValue is required")
+    /** Required unless {@code assessmentId} is provided. */
     @Positive(message = "maxValue must be positive")
     private Double maxValue;
 
