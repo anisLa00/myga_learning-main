@@ -47,6 +47,8 @@ public class SecurityConfig {
                 .authorizeRequests()
                     .antMatchers("/api/auth/**").permitAll()
                     .antMatchers("/h2-console/**").permitAll()
+                    // API documentation.
+                    .antMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                     // Role-specific portals.
                     .antMatchers("/api/parent/**").hasRole("PARENT")
                     .antMatchers("/api/teacher/**").hasRole("TEACHER")

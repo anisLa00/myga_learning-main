@@ -68,6 +68,11 @@ There is deliberately **no `STUDENT` role**.
 - 📢 **Announcements** targeted to everyone, all parents, all teachers, a specific class, or a single user.
 - 🔔 **In-app notifications** generated on real events — a new grade, a new absence, a new visible observation, a new announcement — with per-user unread counts and mark-as-read.
 - 🛡️ **Server-side ownership enforcement (IDOR protection)**: a client-supplied `studentId` is always checked against the caller's own relationships; a parent cannot read another family's data and a teacher cannot act outside their assignments — even by editing an id.
+- 🧪 **Assessments** (exam / quiz / homework / project / oral) tied to **academic years and semesters**; a grade linked to an assessment inherits its subject, maximum grade and semester.
+- 📈 **Performance**: subject and semester averages plus an improving/stable/declining trend, computed only from stored grades.
+- 📊 **Role dashboards** with real aggregates (totals, recent activity, upcoming assessments, attendance %).
+- 🔎 **Pagination and filtering** on the student listing and the staff grade search.
+- 👤 **Account administration**: list users, and enable/disable a login without deleting it.
 - 🖥️ **Angular front end**: login, role-based dashboards, JWT HTTP interceptor and route guards.
 
 ## Architecture
@@ -76,7 +81,7 @@ Clean, layered backend with DTO boundaries — JPA entities are never exposed
 directly by the API:
 
 ```
-Angular SPA  ──HTTP (JWT Bearer)──▶  Controller ──▶ Service ──▶ Repository ──▶ H2 / (PostgreSQL planned)
+Angular SPA  ──HTTP (JWT Bearer)──▶  Controller ──▶ Service ──▶ Repository ──▶ H2 (dev) / PostgreSQL
                                         │             │
                                      DTOs +        business rules +
                                      validation    ownership checks
@@ -98,7 +103,8 @@ Angular SPA  ──HTTP (JWT Bearer)──▶  Controller ──▶ Service ─�
 - Spring Web, Spring Data JPA / Hibernate
 - Spring Security 5 + JWT (`io.jsonwebtoken` 0.11.5), BCrypt
 - Bean Validation (Hibernate Validator)
-- H2 in-memory database (development)
+- H2 in-memory database (development) · PostgreSQL via the `postgres` profile
+- springdoc-openapi (Swagger UI)
 - Lombok, Maven
 - JUnit 5, Spring Boot Test, Spring Security Test
 
@@ -107,8 +113,8 @@ Angular SPA  ──HTTP (JWT Bearer)──▶  Controller ──▶ Service ─�
 - Angular 19 (standalone components, signals), TypeScript, RxJS
 - Angular Router with route guards, functional HTTP interceptor, Reactive Forms
 
-> PostgreSQL is **not yet wired in** — see [Future improvements](#future-improvements).
-> The application currently runs on H2 for development.
+> H2 is the default for local development. A `postgres` profile is provided
+> for a persistent database — see [Environment configuration](#environment-configuration).
 
 ## Database model
 
@@ -125,6 +131,14 @@ erDiagram
     STUDENT ||--o{ GRADE : "receives"
     SUBJECT ||--o{ GRADE : "in"
     TEACHER ||--o{ GRADE : "awards"
+    ASSESSMENT ||--o{ GRADE : "graded by"
+    SEMESTER ||--o{ GRADE : "during"
+
+    ACADEMIC_YEAR ||--o{ SEMESTER : "contains"
+    SUBJECT ||--o{ ASSESSMENT : "for"
+    CLASSE  ||--o{ ASSESSMENT : "sat by"
+    TEACHER ||--o{ ASSESSMENT : "sets"
+    SEMESTER ||--o{ ASSESSMENT : "during"
 
     STUDENT ||--o{ ATTENDANCE : "has"
     CLASSE  ||--o{ ATTENDANCE : "session of"
@@ -139,8 +153,12 @@ erDiagram
 
 Core entities: `User` (+ `Role`), `Student`, `Parent`, `Classe`, `Teacher`,
 `Subject`, `Grade`, `Attendance` (+ `AttendanceStatus`), `TeacherObservation`
-(+ `ObservationType`), `Announcement` (+ `AnnouncementTarget`), `Notification`
+(+ `ObservationType`), `Assessment` (+ `AssessmentType`), `AcademicYear`,
+`Semester`, `Announcement` (+ `AnnouncementTarget`), `Notification`
 (+ `NotificationType`).
+
+The academic year of a grade or assessment is always **derived from its
+semester**, so the two can never disagree.
 
 ## Authentication & authorization
 
@@ -173,7 +191,14 @@ cd backend
 ```
 
 - API base URL: `http://localhost:8080/api`
+- **Swagger UI: `http://localhost:8080/swagger-ui.html`** (OpenAPI spec at `/v3/api-docs`)
 - H2 console: `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:myga`)
+
+To run against PostgreSQL instead of H2:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=postgres
+```
 
 Quick smoke test:
 
@@ -210,12 +235,29 @@ via environment variables:
 | `APP_ADMIN_EMAIL` | `admin@myga.local` | Seeded admin email |
 | `APP_ADMIN_PASSWORD` | `admin123` | Seeded admin password |
 
+**PostgreSQL profile** (`postgres`) — `backend/src/main/resources/application-postgres.properties`:
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `DB_URL` | `jdbc:postgresql://localhost:5432/myga` | JDBC URL |
+| `DB_USERNAME` | `myga` | Database user |
+| `DB_PASSWORD` | `myga` | Database password |
+
+The profile only overrides the datastore (and switches `ddl-auto` to `update`
+so the schema survives restarts) — no application code differs between H2 and
+PostgreSQL.
+
 **Frontend** — `frontend/src/environments/environment.ts` sets `apiUrl`
 (defaults to `http://localhost:8080/api`).
 
 ## API reference
 
-All paths are prefixed with `/api`. 🔒 = requires a Bearer token.
+The full, always-current reference is the **Swagger UI at
+`http://localhost:8080/swagger-ui.html`** — paste a token from
+`POST /api/auth/login` into *Authorize* to try the secured endpoints.
+
+The summary below lists the main routes. All paths are prefixed with `/api`.
+🔒 = requires a Bearer token.
 
 ### Auth
 | Method | Path | Access | Description |
@@ -289,14 +331,12 @@ _Add screenshots of the login, admin, teacher and parent dashboards here._
 
 ## Future improvements
 
-- **PostgreSQL** profile (keep H2 for local dev).
-- **Assessments** and **academic years / semesters**.
-- **Dashboard statistics** endpoints (totals, recent activity, alerts).
-- **OpenAPI / Swagger UI** documentation.
 - Expanded **Angular** screens: management CRUD, teacher grade/attendance entry,
   notifications & announcements UI, search/pagination.
 - **CI/CD** pipeline and containerised deployment.
+- Database **migrations** (Flyway/Liquibase) instead of `ddl-auto`.
 - Optional email/SMS/push notification channels.
+- Refresh tokens.
 - Upgrade to **Spring Boot 3 / Java 17+**.
 
 ## Project layout
