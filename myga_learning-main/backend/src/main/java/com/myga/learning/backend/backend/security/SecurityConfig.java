@@ -54,6 +54,10 @@ public class SecurityConfig {
                     // teacher; the service enforces the teacher's own-assignment
                     // ownership.
                     .antMatchers(HttpMethod.POST, "/api/grades").hasAnyRole("ADMIN", "TEACHER")
+                    // Editing/deleting is further restricted in the service to
+                    // the teacher who recorded the grade.
+                    .antMatchers(HttpMethod.PUT, "/api/grades/**").hasAnyRole("ADMIN", "TEACHER")
+                    .antMatchers(HttpMethod.DELETE, "/api/grades/**").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/attendance", "/api/attendance/**").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/observations").hasAnyRole("ADMIN", "TEACHER")
                     .antMatchers(HttpMethod.POST, "/api/assessments").hasAnyRole("ADMIN", "TEACHER")

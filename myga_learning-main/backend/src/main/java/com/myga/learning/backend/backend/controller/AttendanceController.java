@@ -11,10 +11,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -43,5 +46,14 @@ public class AttendanceController {
     @GetMapping("/students/{studentId}/attendance")
     public AttendanceSummaryResponse getStudentAttendance(@PathVariable Long studentId) {
         return attendanceService.getStudentAttendance(studentId);
+    }
+
+    /** The register for a class on a date (ADMIN or a teacher of that class). */
+    @GetMapping("/classes/{classeId}/attendance")
+    public List<AttendanceResponse> getClassAttendance(
+            @PathVariable Long classeId,
+            @RequestParam(required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date) {
+        return attendanceService.getClassAttendance(classeId, date != null ? date : LocalDate.now());
     }
 }

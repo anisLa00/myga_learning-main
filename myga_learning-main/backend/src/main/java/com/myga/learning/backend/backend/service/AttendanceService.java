@@ -103,6 +103,26 @@ public class AttendanceService {
                         + " was marked absent on " + attendance.getDate() + ".");
     }
 
+    /**
+     * The attendance register for a class on a given date. Available to admins
+     * and to a teacher assigned to that class.
+     */
+    @Transactional(readOnly = true)
+    public List<AttendanceResponse> getClassAttendance(Long classeId, LocalDate date) {
+        Classe classe = getClasse(classeId);
+        if (!currentUserService.hasRole("ADMIN")) {
+            if (!currentUserService.hasRole("TEACHER")) {
+                throw new AccessDeniedException("Not allowed to view a class register");
+            }
+            if (!currentUserService.teacherTeachesClasse(currentUserService.getCurrentTeacher(), classe.getId())) {
+                throw new AccessDeniedException("This class is not one of your assigned classes");
+            }
+        }
+        return attendanceRepository.findByClasse_IdAndDate(classe.getId(), date).stream()
+                .map(AttendanceMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
     @Transactional(readOnly = true)
     public AttendanceSummaryResponse getStudentAttendance(Long studentId) {
         Student student = studentRepository.findById(studentId)
