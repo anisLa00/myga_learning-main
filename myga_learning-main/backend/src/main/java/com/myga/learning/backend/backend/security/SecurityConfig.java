@@ -60,6 +60,10 @@ public class SecurityConfig {
                     .antMatchers(HttpMethod.PUT, "/api/notifications/**").hasAnyRole("ADMIN", "TEACHER", "PARENT")
                     // The full announcement list is an admin management view; /me is open to all.
                     .antMatchers(HttpMethod.GET, "/api/announcements").hasRole("ADMIN")
+                    // Each dashboard is restricted to its own role.
+                    .antMatchers(HttpMethod.GET, "/api/dashboard/admin").hasRole("ADMIN")
+                    .antMatchers(HttpMethod.GET, "/api/dashboard/teacher").hasRole("TEACHER")
+                    .antMatchers(HttpMethod.GET, "/api/dashboard/parent").hasRole("PARENT")
                     // Reads are open to any authenticated role; ownership on
                     // sensitive reads (e.g. a student's grades) is enforced in
                     // the service layer, not by the URL alone.
