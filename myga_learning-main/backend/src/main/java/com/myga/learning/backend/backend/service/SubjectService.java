@@ -42,4 +42,21 @@ public class SubjectService {
         subject.setCode(request.getCode());
         return SubjectMapper.toResponse(subjectRepository.save(subject));
     }
+
+    public SubjectResponse update(Long id, SubjectRequest request) {
+        Subject subject = getSubjectOrThrow(id);
+        subject.setNom(request.getNom());
+        subject.setCode(request.getCode());
+        return SubjectMapper.toResponse(subjectRepository.save(subject));
+    }
+
+    /** Fails with 409 if the subject is still referenced by grades or assessments. */
+    public void delete(Long id) {
+        subjectRepository.delete(getSubjectOrThrow(id));
+    }
+
+    private Subject getSubjectOrThrow(Long id) {
+        return subjectRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.of("Subject", id));
+    }
 }

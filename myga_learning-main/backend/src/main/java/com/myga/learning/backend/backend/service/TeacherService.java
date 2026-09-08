@@ -83,6 +83,46 @@ public class TeacherService {
         return TeacherMapper.toResponse(getTeacherOrThrow(id));
     }
 
+    /** Updates the teacher's own details (the linked login is kept in step). */
+    public TeacherResponse update(Long id, TeacherRequest request) {
+        Teacher teacher = getTeacherOrThrow(id);
+        teacher.setNom(request.getNom());
+        teacher.setPrenom(request.getPrenom());
+        User user = teacher.getUser();
+        if (user != null) {
+            user.setNom(request.getNom());
+            user.setPrenom(request.getPrenom());
+            userRepository.save(user);
+        }
+        return TeacherMapper.toResponse(teacherRepository.save(teacher));
+    }
+
+    /**
+     * Deletes a teacher and their login. Fails with 409 while grades,
+     * assessments, attendance or observations still reference them - disable
+     * the account instead when there is history to preserve.
+     */
+    public void delete(Long id) {
+        Teacher teacher = getTeacherOrThrow(id);
+        User user = teacher.getUser();
+        teacherRepository.delete(teacher);
+        if (user != null) {
+            userRepository.delete(user);
+        }
+    }
+
+    public TeacherResponse unassignSubject(Long teacherId, Long subjectId) {
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        teacher.getSubjects().removeIf(s -> s.getId().equals(subjectId));
+        return TeacherMapper.toResponse(teacherRepository.save(teacher));
+    }
+
+    public TeacherResponse unassignClasse(Long teacherId, Long classeId) {
+        Teacher teacher = getTeacherOrThrow(teacherId);
+        teacher.getClasses().removeIf(c -> c.getId().equals(classeId));
+        return TeacherMapper.toResponse(teacherRepository.save(teacher));
+    }
+
     public TeacherResponse assignSubject(Long teacherId, Long subjectId) {
         Teacher teacher = getTeacherOrThrow(teacherId);
         Subject subject = subjectRepository.findById(subjectId)

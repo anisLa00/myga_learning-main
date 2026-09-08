@@ -30,6 +30,21 @@ public class ClasseService {
         return ClasseMapper.toResponse(classeRepository.save(classe));
     }
 
+    @Transactional
+    public ClasseResponse update(Long id, ClasseRequest request) {
+        Classe classe = classeRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.of("Classe", id));
+        classe.setSalle(request.getSalle());
+        return ClasseMapper.toResponse(classeRepository.save(classe));
+    }
+
+    /** Fails with 409 if students or records still reference the class. */
+    @Transactional
+    public void delete(Long id) {
+        classeRepository.delete(classeRepository.findById(id)
+                .orElseThrow(() -> ResourceNotFoundException.of("Classe", id)));
+    }
+
     public List<ClasseResponse> findAll() {
         return classeRepository.findAll().stream()
                 .map(ClasseMapper::toResponse)

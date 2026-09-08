@@ -58,4 +58,10 @@ public class ParentController {
     public ParentResponse linkStudent(@PathVariable Long phone, @PathVariable Long studentId) {
         return parentService.linkStudent(phone, studentId);
     }
+
+    /** Remove the link between this parent and one of their children (admin). */
+    @DeleteMapping("/{phone}/students/{studentId}")
+    public ParentResponse unlinkStudent(@PathVariable Long phone, @PathVariable Long studentId) {
+        return parentService.unlinkStudent(phone, studentId);
+    }
 }

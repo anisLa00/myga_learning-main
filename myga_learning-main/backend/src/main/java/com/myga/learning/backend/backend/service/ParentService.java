@@ -109,6 +109,15 @@ public class ParentService {
         return ParentMapper.toResponse(parentRepository.save(parent));
     }
 
+    /** Removes the link between a parent and one of their children (admin). */
+    public ParentResponse unlinkStudent(Long phone, Long studentId) {
+        Parent parent = getParentOrThrow(phone);
+        if (parent.getStudents() != null) {
+            parent.getStudents().removeIf(s -> s.getId().equals(studentId));
+        }
+        return ParentMapper.toResponse(parentRepository.save(parent));
+    }
+
     /** The children linked to the currently authenticated parent. */
     @Transactional(readOnly = true)
     public List<StudentSummaryResponse> getMyChildren() {
