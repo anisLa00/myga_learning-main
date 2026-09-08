@@ -5,5 +5,6 @@ public enum NotificationType {
     NEW_GRADE,
     NEW_ABSENCE,
     NEW_ANNOUNCEMENT,
+    NEW_OBSERVATION,
     GENERAL
 }
