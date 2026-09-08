@@ -37,6 +37,18 @@ tbody tr:last-child td { border-bottom: 0; }
 .chips { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: .5rem; }
 .chips li { background: #e0e7ff; color: #1e3a8a; border-radius: 999px; padding: .3rem .8rem; font-size: .85rem; }
 
+/* Tags */
+.tag {
+  display: inline-block; background: #e0e7ff; color: #1e3a8a; border-radius: 999px;
+  padding: .1rem .55rem; font-size: .7rem; margin-left: .4rem; vertical-align: middle;
+}
+.tag.private { background: #fee2e2; color: #b91c1c; }
+
+/* Feed lists (announcements, observations) */
+.feed { list-style: none; padding: 0; display: flex; flex-direction: column; gap: .6rem; }
+.feed li { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: .75rem 1rem; }
+.feed li p { margin: .35rem 0 0; font-size: .9rem; }
+
 /* Cards (parent children) */
 .cards { display: flex; flex-wrap: wrap; gap: .75rem; }
 .child-card {
