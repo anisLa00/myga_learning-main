@@ -1,5 +1,6 @@
 package com.myga.learning.backend.backend.service;
 
+import com.myga.learning.backend.backend.dto.PageResponse;
 import com.myga.learning.backend.backend.dto.StudentRequest;
 import com.myga.learning.backend.backend.dto.StudentResponse;
 import com.myga.learning.backend.backend.exception.ResourceNotFoundException;
@@ -8,9 +9,14 @@ import com.myga.learning.backend.backend.models.Classe;
 import com.myga.learning.backend.backend.models.Student;
 import com.myga.learning.backend.backend.repositories.ClasseRepository;
 import com.myga.learning.backend.backend.repositories.StudentRepository;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
+import javax.persistence.criteria.Predicate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +39,28 @@ public class StudentService {
         return studentRepository.findAll().stream()
                 .map(StudentMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Paged listing with optional filters: a free-text search over the last and
+     * first name, and a class filter.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<StudentResponse> search(String search, Long classeId, Pageable pageable) {
+        Specification<Student> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (StringUtils.hasText(search)) {
+                String like = "%" + search.toLowerCase() + "%";
+                predicates.add(cb.or(
+                        cb.like(cb.lower(root.get("nom")), like),
+                        cb.like(cb.lower(root.get("prenom")), like)));
+            }
+            if (classeId != null) {
+                predicates.add(cb.equal(root.get("classe").get("id"), classeId));
+            }
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return PageResponse.of(studentRepository.findAll(spec, pageable).map(StudentMapper::toResponse));
     }
 
     @Transactional(readOnly = true)

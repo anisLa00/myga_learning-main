@@ -1,10 +1,11 @@
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import {
   ClasseSummary,
   GradeResponse,
+  PageResponse,
   StudentResponse,
   StudentSummary,
   SubjectResponse,
@@ -16,9 +17,21 @@ export class AcademicService {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
-  // Admin
+  // Admin — the students endpoint is paged; callers that only need the rows
+  // can use getStudents(), while getStudentPage() exposes the page metadata.
+  getStudentPage(
+    opts: { search?: string; classeId?: number; page?: number; size?: number } = {}
+  ): Observable<PageResponse<StudentResponse>> {
+    let params = new HttpParams();
+    if (opts.search) params = params.set('search', opts.search);
+    if (opts.classeId != null) params = params.set('classeId', opts.classeId);
+    if (opts.page != null) params = params.set('page', opts.page);
+    if (opts.size != null) params = params.set('size', opts.size);
+    return this.http.get<PageResponse<StudentResponse>>(`${this.base}/students`, { params });
+  }
+
   getStudents(): Observable<StudentResponse[]> {
-    return this.http.get<StudentResponse[]>(`${this.base}/students`);
+    return this.getStudentPage({ size: 100 }).pipe(map((page) => page.content));
   }
 
   // Parent portal

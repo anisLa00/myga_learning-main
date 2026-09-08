@@ -1,8 +1,11 @@
 package com.myga.learning.backend.backend.controller;
 
 import com.myga.learning.backend.backend.dto.GradeRequest;
+import com.myga.learning.backend.backend.dto.PageResponse;
 import com.myga.learning.backend.backend.dto.GradeResponse;
 import com.myga.learning.backend.backend.service.GradeService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -37,6 +41,22 @@ public class GradeController {
     @GetMapping("/students/{studentId}/grades")
     public List<GradeResponse> getStudentGrades(@PathVariable Long studentId) {
         return gradeService.getStudentGrades(studentId);
+    }
+
+    /**
+     * Filtered, paged grade search for staff (ADMIN or TEACHER). A teacher's
+     * results are always restricted to their own classes.
+     */
+    @GetMapping("/grades")
+    public PageResponse<GradeResponse> search(
+            @RequestParam(required = false) Long studentId,
+            @RequestParam(required = false) Long subjectId,
+            @RequestParam(required = false) Long classeId,
+            @RequestParam(required = false) Long semesterId,
+            @RequestParam(required = false) Long assessmentId,
+            @RequestParam(required = false) Long teacherId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return gradeService.search(studentId, subjectId, classeId, semesterId, assessmentId, teacherId, pageable);
     }
 
     /** Update a grade. A teacher may only change grades they recorded. */

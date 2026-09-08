@@ -1,8 +1,11 @@
 package com.myga.learning.backend.backend.controller;
 
+import com.myga.learning.backend.backend.dto.PageResponse;
 import com.myga.learning.backend.backend.dto.StudentRequest;
 import com.myga.learning.backend.backend.dto.StudentResponse;
 import com.myga.learning.backend.backend.service.StudentService;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -12,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
@@ -27,9 +31,13 @@ public class StudentController {
         this.studentService = studentService;
     }
 
+    /** Paged listing, optionally filtered by free-text name search and class. */
     @GetMapping
-    public List<StudentResponse> findAll() {
-        return studentService.findAll();
+    public PageResponse<StudentResponse> findAll(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long classeId,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return studentService.search(search, classeId, pageable);
     }
 
     @GetMapping("/{id}")

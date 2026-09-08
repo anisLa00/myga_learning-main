@@ -1,10 +1,12 @@
 package com.myga.learning.backend.backend.service;
 
 import com.myga.learning.backend.backend.dto.GradeRequest;
+import com.myga.learning.backend.backend.dto.PageResponse;
 import com.myga.learning.backend.backend.dto.GradeResponse;
 import com.myga.learning.backend.backend.exception.ResourceNotFoundException;
 import com.myga.learning.backend.backend.mapper.GradeMapper;
 import com.myga.learning.backend.backend.models.Assessment;
+import com.myga.learning.backend.backend.models.Classe;
 import com.myga.learning.backend.backend.models.Grade;
 import com.myga.learning.backend.backend.models.NotificationType;
 import com.myga.learning.backend.backend.models.Semester;
@@ -16,11 +18,16 @@ import com.myga.learning.backend.backend.repositories.GradeRepository;
 import com.myga.learning.backend.backend.repositories.StudentRepository;
 import com.myga.learning.backend.backend.repositories.SubjectRepository;
 import com.myga.learning.backend.backend.repositories.TeacherRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import javax.persistence.criteria.Predicate;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -99,6 +106,58 @@ public class GradeService {
         return gradeRepository.findByStudent_Id(studentId).stream()
                 .map(GradeMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * Filtered, paged grade search for staff. Admins see everything; a teacher
+     * is transparently restricted to students in their assigned classes, so
+     * the filters can never widen what they are allowed to see.
+     */
+    @Transactional(readOnly = true)
+    public PageResponse<GradeResponse> search(Long studentId, Long subjectId, Long classeId,
+                                              Long semesterId, Long assessmentId, Long teacherId,
+                                              Pageable pageable) {
+        List<Long> allowedClasseIds = null;
+        if (!currentUserService.hasRole("ADMIN")) {
+            if (!currentUserService.hasRole("TEACHER")) {
+                throw new AccessDeniedException("Not allowed to search grades");
+            }
+            Teacher teacher = currentUserService.getCurrentTeacher();
+            allowedClasseIds = teacher.getClasses().stream()
+                    .map(Classe::getId)
+                    .collect(Collectors.toList());
+            if (allowedClasseIds.isEmpty()) {
+                return PageResponse.of(Page.empty(pageable));
+            }
+        }
+        final List<Long> scope = allowedClasseIds;
+
+        Specification<Grade> spec = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
+            if (studentId != null) {
+                predicates.add(cb.equal(root.get("student").get("id"), studentId));
+            }
+            if (subjectId != null) {
+                predicates.add(cb.equal(root.get("subject").get("id"), subjectId));
+            }
+            if (classeId != null) {
+                predicates.add(cb.equal(root.get("student").get("classe").get("id"), classeId));
+            }
+            if (semesterId != null) {
+                predicates.add(cb.equal(root.get("semester").get("id"), semesterId));
+            }
+            if (assessmentId != null) {
+                predicates.add(cb.equal(root.get("assessment").get("id"), assessmentId));
+            }
+            if (teacherId != null) {
+                predicates.add(cb.equal(root.get("teacher").get("id"), teacherId));
+            }
+            if (scope != null) {
+                predicates.add(root.get("student").get("classe").get("id").in(scope));
+            }
+            return predicates.isEmpty() ? cb.conjunction() : cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return PageResponse.of(gradeRepository.findAll(spec, pageable).map(GradeMapper::toResponse));
     }
 
     /**
