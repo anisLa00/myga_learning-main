@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, OnInit, inject } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { NotificationService } from '../../core/services/notification.service';
 
 /** Authenticated shell: role-aware navigation, current user and logout. */
 @Component({
@@ -18,6 +19,10 @@ import { AuthService } from '../../core/services/auth.service';
           <span class="role">{{ user.role }}</span>
         </span>
       }
+      <a class="bell" routerLink="/notifications" title="Notifications">
+        🔔
+        @if (notifications.unread() > 0) { <span class="badge">{{ notifications.unread() }}</span> }
+      </a>
       <button class="logout" (click)="logout()">Logout</button>
     </header>
 
@@ -30,6 +35,7 @@ import { AuthService } from '../../core/services/auth.service';
         <a routerLink="/admin/teachers" routerLinkActive="active">Teachers</a>
         <a routerLink="/admin/parents" routerLinkActive="active">Parents</a>
         <a routerLink="/admin/users" routerLinkActive="active">Accounts</a>
+        <a routerLink="/announcements" routerLinkActive="active">Announcements</a>
       </nav>
     }
 
@@ -40,6 +46,15 @@ import { AuthService } from '../../core/services/auth.service';
         <a routerLink="/teacher/grades" routerLinkActive="active">Grades</a>
         <a routerLink="/teacher/assessments" routerLinkActive="active">Assessments</a>
         <a routerLink="/teacher/observations" routerLinkActive="active">Observations</a>
+        <a routerLink="/announcements" routerLinkActive="active">Announcements</a>
+      </nav>
+    }
+
+    @if (auth.user()?.role === 'PARENT') {
+      <nav class="subnav">
+        <a routerLink="/parent" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <a routerLink="/parent/children" routerLinkActive="active">My children</a>
+        <a routerLink="/announcements" routerLinkActive="active">Announcements</a>
       </nav>
     }
 
@@ -55,6 +70,9 @@ import { AuthService } from '../../core/services/auth.service';
     .who { font-size: .85rem; opacity: .95; }
     .role { background: rgba(255,255,255,.2); border-radius: 999px; padding: .1rem .5rem; margin-left: .4rem; font-size: .7rem; }
     .logout { background: #fff; color: #1e3a8a; border: 0; border-radius: 8px; padding: .4rem .8rem; cursor: pointer; }
+    .bell { position: relative; text-decoration: none; font-size: 1.1rem; padding: .2rem .35rem; }
+    .badge { position: absolute; top: -2px; right: -6px; background: #dc2626; color: #fff;
+             border-radius: 999px; font-size: .65rem; padding: .05rem .3rem; font-weight: 700; }
     .subnav { display: flex; gap: .25rem; flex-wrap: wrap; padding: .5rem 1.25rem; background: #1e40af; }
     .subnav a { color: #dbeafe; text-decoration: none; font-size: .85rem; padding: .35rem .7rem; border-radius: 6px; }
     .subnav a:hover { background: rgba(255,255,255,.12); }
@@ -62,9 +80,14 @@ import { AuthService } from '../../core/services/auth.service';
     .content { padding: 1.5rem; max-width: 1040px; margin: 0 auto; }
   `],
 })
-export class LayoutComponent {
+export class LayoutComponent implements OnInit {
   readonly auth = inject(AuthService);
+  readonly notifications = inject(NotificationService);
   private readonly router = inject(Router);
+
+  ngOnInit(): void {
+    this.notifications.refreshUnread();
+  }
 
   logout(): void {
     this.auth.logout();

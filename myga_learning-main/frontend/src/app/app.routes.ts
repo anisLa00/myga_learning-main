@@ -16,6 +16,9 @@ import { TeacherAttendanceComponent } from './features/teacher/work/attendance-p
 import { TeacherGradesComponent } from './features/teacher/work/grades-page.component';
 import { TeacherObservationsComponent } from './features/teacher/work/observations-page.component';
 import { TeacherAssessmentsComponent } from './features/teacher/work/assessments-page.component';
+import { ParentChildComponent } from './features/parent/detail/child-page.component';
+import { NotificationsComponent } from './features/shared/notifications-page.component';
+import { AnnouncementsComponent } from './features/shared/announcements-page.component';
 
 const adminOnly = [roleGuard(['ADMIN'])];
 const teacherOnly = [roleGuard(['TEACHER'])];
@@ -41,6 +44,11 @@ export const routes: Routes = [
       { path: 'teacher/observations', component: TeacherObservationsComponent, canActivate: teacherOnly },
       { path: 'teacher/assessments', component: TeacherAssessmentsComponent, canActivate: teacherOnly },
       { path: 'parent', component: ParentDashboardComponent, canActivate: [roleGuard(['PARENT'])] },
+      { path: 'parent/children', component: ParentChildComponent, canActivate: [roleGuard(['PARENT'])] },
+
+      // Available to every signed-in role; the backend scopes the content.
+      { path: 'notifications', component: NotificationsComponent },
+      { path: 'announcements', component: AnnouncementsComponent },
       { path: '', pathMatch: 'full', component: HomeRedirectComponent },
     ],
   },
