@@ -1,5 +1,7 @@
 # MYGA Learning — School Management Platform
 
+[![CI](https://github.com/anisLa00/myga_learning-main/actions/workflows/ci.yml/badge.svg)](https://github.com/anisLa00/myga_learning-main/actions/workflows/ci.yml)
+
 A private school-management platform that lets **parents follow their children's
 academic life remotely** — grades, attendance, teacher feedback and school
 announcements — instead of having to visit the school in person. Teachers manage
@@ -341,6 +343,27 @@ authorization, parent-child and teacher-assignment ownership (IDOR attempts),
 grade/attendance/observation creation rules, and announcement/notification
 fan-out.
 
+Front-end unit tests run against headless Chrome:
+
+```bash
+cd frontend
+npx ng test --watch=false --browsers=ChromeHeadlessCI
+```
+
+`ChromeHeadlessCI` is defined in `frontend/karma.conf.js`; it is plain headless
+Chrome with the sandbox disabled, which is what containers and CI runners need.
+
+### Continuous integration
+
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml) runs on every push and
+pull request:
+
+| Job | What it does |
+|-----|--------------|
+| **Backend** | `./mvnw test` on JDK 21 — the full suite; the surefire reports are uploaded when it fails. |
+| **Frontend** | `npm ci`, the unit tests on headless Chrome, then a production build. |
+| **API smoke test** | Packages the jar, starts it, waits for the API to answer, then runs `docs/seed-demo-data.js` against it — an end-to-end pass over authentication, the academic structure, assessments, grades, attendance, feedback and announcements. |
+
 ## Screenshots
 
 Real captures of the running application — the Angular front end talking to the
@@ -392,7 +415,8 @@ cannot be used to find out which email addresses exist.
 
 ## Future improvements
 
-- **CI/CD** pipeline and containerised deployment.
+- **Containerised deployment** (the CI pipeline is in place; a Docker image and
+  a deployment target are not).
 - Database **migrations** (Flyway/Liquibase) instead of `ddl-auto`.
 - Optional email/SMS/push notification channels.
 - Refresh tokens.
@@ -401,6 +425,7 @@ cannot be used to find out which email addresses exist.
 ## Project layout
 
 ```
+.github/workflows/  CI: backend tests, frontend build + unit tests, API smoke test
 myga_learning-main/
 ├── backend/        Spring Boot REST API (Java 11, Maven)
 │   └── src/main/java/com/myga/learning/backend/backend/

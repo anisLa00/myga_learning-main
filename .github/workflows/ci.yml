@@ -1,0 +1,115 @@
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  backend:
+    name: Backend · Spring Boot tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Run the test suite
+        working-directory: myga_learning-main/backend
+        run: ./mvnw -B --no-transfer-progress test
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: surefire-reports
+          path: myga_learning-main/backend/target/surefire-reports/
+          if-no-files-found: ignore
+
+  frontend:
+    name: Frontend · build and unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: myga_learning-main/frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: myga_learning-main/frontend
+        run: npm ci
+
+      - name: Unit tests
+        working-directory: myga_learning-main/frontend
+        run: npx ng test --watch=false --browsers=ChromeHeadlessCI
+
+      - name: Production build
+        working-directory: myga_learning-main/frontend
+        run: npm run build -- --configuration production
+
+  smoke:
+    name: API smoke test
+    needs: backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+
+      - name: Package the backend
+        working-directory: myga_learning-main/backend
+        run: ./mvnw -B --no-transfer-progress -DskipTests package
+
+      - name: Start the backend
+        working-directory: myga_learning-main/backend
+        run: |
+          nohup java -jar target/*.jar > "$RUNNER_TEMP/backend.log" 2>&1 &
+          for _ in $(seq 1 60); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' \
+              -X POST http://localhost:8080/api/auth/login \
+              -H 'Content-Type: application/json' \
+              -d '{"email":"admin@myga.local","password":"admin123"}' || true)
+            if [ "$code" = "200" ]; then echo "backend is up"; exit 0; fi
+            sleep 2
+          done
+          echo "backend did not start in time" >&2
+          cat "$RUNNER_TEMP/backend.log" >&2
+          exit 1
+
+      # Drives the public REST API end to end: authenticates as the
+      # administrator and then as a teacher, and exercises every module
+      # (structure, staff, assessments, grades, attendance, feedback,
+      # announcements). Any authorization or validation regression fails here.
+      - name: Seed the demo school through the API
+        working-directory: myga_learning-main
+        run: node docs/seed-demo-data.js
+
+      - name: Backend log
+        if: failure()
+        run: cat "$RUNNER_TEMP/backend.log" || true
