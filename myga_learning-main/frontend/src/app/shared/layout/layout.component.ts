@@ -1,13 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, inject } from '@angular/core';
-import { Router, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
-/** Authenticated shell: a top bar with the current user and a logout button. */
+/** Authenticated shell: role-aware navigation, current user and logout. */
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, RouterOutlet],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive],
   template: `
     <header class="topbar">
       <span class="brand">MYGA Learning</span>
@@ -20,6 +20,19 @@ import { AuthService } from '../../core/services/auth.service';
       }
       <button class="logout" (click)="logout()">Logout</button>
     </header>
+
+    @if (auth.user()?.role === 'ADMIN') {
+      <nav class="subnav">
+        <a routerLink="/admin" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <a routerLink="/admin/students" routerLinkActive="active">Students</a>
+        <a routerLink="/admin/classes" routerLinkActive="active">Classes</a>
+        <a routerLink="/admin/subjects" routerLinkActive="active">Subjects</a>
+        <a routerLink="/admin/teachers" routerLinkActive="active">Teachers</a>
+        <a routerLink="/admin/parents" routerLinkActive="active">Parents</a>
+        <a routerLink="/admin/users" routerLinkActive="active">Accounts</a>
+      </nav>
+    }
+
     <main class="content">
       <router-outlet />
     </main>
@@ -32,7 +45,11 @@ import { AuthService } from '../../core/services/auth.service';
     .who { font-size: .85rem; opacity: .95; }
     .role { background: rgba(255,255,255,.2); border-radius: 999px; padding: .1rem .5rem; margin-left: .4rem; font-size: .7rem; }
     .logout { background: #fff; color: #1e3a8a; border: 0; border-radius: 8px; padding: .4rem .8rem; cursor: pointer; }
-    .content { padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+    .subnav { display: flex; gap: .25rem; flex-wrap: wrap; padding: .5rem 1.25rem; background: #1e40af; }
+    .subnav a { color: #dbeafe; text-decoration: none; font-size: .85rem; padding: .35rem .7rem; border-radius: 6px; }
+    .subnav a:hover { background: rgba(255,255,255,.12); }
+    .subnav a.active { background: #fff; color: #1e3a8a; font-weight: 600; }
+    .content { padding: 1.5rem; max-width: 1040px; margin: 0 auto; }
   `],
 })
 export class LayoutComponent {

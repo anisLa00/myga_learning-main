@@ -1,3 +1,5 @@
+import { Role } from './auth.models';
+
 /** Envelope returned by the paged list endpoints. */
 export interface PageResponse<T> {
   content: T[];
@@ -147,4 +149,71 @@ export interface NotificationResponse {
   createdAt?: string;
   readAt?: string | null;
   read: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Request payloads (admin management)
+// ---------------------------------------------------------------------------
+
+export interface StudentRequest {
+  nom: string;
+  prenom: string;
+  age: number;
+  classeId?: number | null;
+}
+
+export interface ClasseRequest {
+  salle: number;
+}
+
+export interface SubjectRequest {
+  nom: string;
+  code?: string;
+}
+
+export interface TeacherRequest {
+  nom: string;
+  prenom: string;
+  email: string;
+  password: string;
+}
+
+export interface ParentRequest {
+  nom: string;
+  prenom: string;
+  email: string;
+  /** When set, a PARENT login is provisioned for this parent. */
+  password?: string;
+}
+
+export interface ParentResponse {
+  phone: number;
+  nom: string;
+  prenom: string;
+  email: string;
+  students: StudentSummary[];
+}
+
+export interface TeacherResponse {
+  id: number;
+  nom: string;
+  prenom: string;
+  email?: string | null;
+  subjects: SubjectResponse[];
+  classes: ClasseSummary[];
+}
+
+export interface ClasseResponse {
+  id: number;
+  salle: number;
+  students: StudentSummary[];
+}
+
+export interface UserResponse {
+  id: number;
+  email: string;
+  nom?: string | null;
+  prenom?: string | null;
+  role: Role;
+  enabled: boolean;
 }
