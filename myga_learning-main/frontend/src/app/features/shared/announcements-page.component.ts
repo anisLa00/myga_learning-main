@@ -63,7 +63,7 @@ type Target = 'ALL' | 'PARENTS' | 'TEACHERS' | 'CLASS';
             <span class="tag">{{ a.target }}</span>
             <p class="muted">{{ a.message }}</p>
             <span class="muted small">
-              {{ a.createdAt }} @if (a.createdByEmail) { · {{ a.createdByEmail }} }
+              {{ a.createdAt | date: 'd MMM y, HH:mm' }} @if (a.createdByEmail) { · {{ a.createdByEmail }} }
             </span>
           </li>
         }

@@ -31,7 +31,7 @@ import { NotificationResponse } from '../../core/models/domain.models';
             @if (!n.read) { <span class="tag ok">new</span> }
             <p class="muted">{{ n.message }}</p>
             <div class="foot">
-              <span class="muted small">{{ n.createdAt }}</span>
+              <span class="muted small">{{ n.createdAt | date: 'd MMM y, HH:mm' }}</span>
               @if (!n.read) {
                 <button class="ghost" (click)="markRead(n)">Mark as read</button>
               }
