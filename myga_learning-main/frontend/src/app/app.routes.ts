@@ -12,8 +12,13 @@ import { ManageSubjectsComponent } from './features/admin/manage/subjects-page.c
 import { ManageTeachersComponent } from './features/admin/manage/teachers-page.component';
 import { ManageParentsComponent } from './features/admin/manage/parents-page.component';
 import { ManageUsersComponent } from './features/admin/manage/users-page.component';
+import { TeacherAttendanceComponent } from './features/teacher/work/attendance-page.component';
+import { TeacherGradesComponent } from './features/teacher/work/grades-page.component';
+import { TeacherObservationsComponent } from './features/teacher/work/observations-page.component';
+import { TeacherAssessmentsComponent } from './features/teacher/work/assessments-page.component';
 
 const adminOnly = [roleGuard(['ADMIN'])];
+const teacherOnly = [roleGuard(['TEACHER'])];
 
 export const routes: Routes = [
   { path: 'login', component: LoginComponent },
@@ -30,7 +35,11 @@ export const routes: Routes = [
       { path: 'admin/parents', component: ManageParentsComponent, canActivate: adminOnly },
       { path: 'admin/users', component: ManageUsersComponent, canActivate: adminOnly },
 
-      { path: 'teacher', component: TeacherDashboardComponent, canActivate: [roleGuard(['TEACHER'])] },
+      { path: 'teacher', component: TeacherDashboardComponent, canActivate: teacherOnly },
+      { path: 'teacher/attendance', component: TeacherAttendanceComponent, canActivate: teacherOnly },
+      { path: 'teacher/grades', component: TeacherGradesComponent, canActivate: teacherOnly },
+      { path: 'teacher/observations', component: TeacherObservationsComponent, canActivate: teacherOnly },
+      { path: 'teacher/assessments', component: TeacherAssessmentsComponent, canActivate: teacherOnly },
       { path: 'parent', component: ParentDashboardComponent, canActivate: [roleGuard(['PARENT'])] },
       { path: '', pathMatch: 'full', component: HomeRedirectComponent },
     ],

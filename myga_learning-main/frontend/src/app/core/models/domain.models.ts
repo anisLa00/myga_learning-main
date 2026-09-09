@@ -217,3 +217,12 @@ export interface UserResponse {
   role: Role;
   enabled: boolean;
 }
+
+export interface SemesterResponse {
+  id: number;
+  label: string;
+  academicYearId?: number | null;
+  academicYear?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+}

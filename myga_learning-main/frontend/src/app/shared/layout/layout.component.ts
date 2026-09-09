@@ -33,6 +33,16 @@ import { AuthService } from '../../core/services/auth.service';
       </nav>
     }
 
+    @if (auth.user()?.role === 'TEACHER') {
+      <nav class="subnav">
+        <a routerLink="/teacher" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">Dashboard</a>
+        <a routerLink="/teacher/attendance" routerLinkActive="active">Attendance</a>
+        <a routerLink="/teacher/grades" routerLinkActive="active">Grades</a>
+        <a routerLink="/teacher/assessments" routerLinkActive="active">Assessments</a>
+        <a routerLink="/teacher/observations" routerLinkActive="active">Observations</a>
+      </nav>
+    }
+
     <main class="content">
       <router-outlet />
     </main>

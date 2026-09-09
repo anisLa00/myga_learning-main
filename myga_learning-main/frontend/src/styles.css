@@ -105,3 +105,13 @@ button:disabled { opacity: .6; cursor: not-allowed; }
 .small { font-size: .78rem; }
 td.right, th.right { text-align: right; }
 .tag.ok { background: #dcfce7; color: #166534; }
+
+/* Notices and inline form controls */
+.notice {
+  background: #eff6ff; color: #1e3a8a; border: 1px solid #bfdbfe;
+  padding: .6rem .9rem; border-radius: 8px; margin: .6rem 0; font-size: .88rem;
+}
+label.inline { display: inline-flex; align-items: center; gap: .35rem; font-size: .8rem; color: #374151; }
+label.inline select { padding: .3rem .5rem; border: 1px solid #d1d5db; border-radius: 8px; font-size: .8rem; }
+label.check { display: inline-flex; align-items: center; gap: .4rem; margin-top: .8rem; font-size: .85rem; color: #374151; }
+table select, table input { padding: .3rem .5rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: .85rem; }
