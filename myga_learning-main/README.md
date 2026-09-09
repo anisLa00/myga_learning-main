@@ -73,7 +73,10 @@ There is deliberately **no `STUDENT` role**.
 - 📊 **Role dashboards** with real aggregates (totals, recent activity, upcoming assessments, attendance %).
 - 🔎 **Pagination and filtering** on the student listing and the staff grade search.
 - 👤 **Account administration**: list users, and enable/disable a login without deleting it.
-- 🖥️ **Angular front end**: login, role-based dashboards, JWT HTTP interceptor and route guards.
+- 🖥️ **Angular front end**: login and role-based dashboards, admin management
+  screens, the teacher workspace (attendance, grades, assessments, observations),
+  the parent portal, notifications and announcements — behind a JWT HTTP
+  interceptor and route guards.
 
 ## Architecture
 
@@ -223,6 +226,23 @@ The backend already allows the `http://localhost:4200` origin (CORS). Log in
 with the seeded admin credentials above; you'll be routed to the dashboard for
 your role.
 
+### Demo data
+
+A fresh database contains only the default administrator. To fill it with the
+school used in the [screenshots](#screenshots) — classes, subjects, teachers,
+students, parent accounts, assessments, grades, attendance, feedback and
+announcements — run, against a freshly started backend:
+
+```bash
+node docs/seed-demo-data.js
+```
+
+It logs in as the administrator and then as a teacher and drives the public REST
+API only, so it also works as an end-to-end smoke test. It creates the logins
+`turing@myga.local` / `teacher123` (teacher) and `pierre@myga.local` /
+`parent123` (parent) — local development credentials, not for any real
+deployment.
+
 ## Environment configuration
 
 **Backend** — `backend/src/main/resources/application.properties`, overridable
@@ -323,16 +343,55 @@ fan-out.
 
 ## Screenshots
 
-_Add screenshots of the login, admin, teacher and parent dashboards here._
+Real captures of the running application — the Angular front end talking to the
+Spring Boot API. The data comes from
+[`docs/seed-demo-data.js`](docs/seed-demo-data.js), which builds the whole demo
+school through the public REST API, so every screen below can be reproduced
+locally.
 
-| Login | Admin dashboard | Parent dashboard |
-|-------|-----------------|------------------|
-| _todo_ | _todo_ | _todo_ |
+### Signing in
+
+![Sign in](docs/screenshots/01-login.png)
+
+Only administrators, teachers and parents authenticate — accounts are created by
+the administration, there is no public sign-up, and **students never get an
+account**. Wrong credentials return a deliberately vague message, so the form
+cannot be used to find out which email addresses exist.
+
+### Administration
+
+| | |
+|---|---|
+| ![Admin dashboard](docs/screenshots/02-admin-dashboard.png) | ![Students](docs/screenshots/03-admin-students.png) |
+| **Dashboard** — live counts for the whole school plus recent activity, served by `GET /api/dashboard/admin`. | **Students** — server-side search and pagination; a student is an academic record, not a user. |
+| ![Teachers](docs/screenshots/04-admin-teachers.png) | ![Accounts](docs/screenshots/05-admin-accounts.png) |
+| **Teachers** — assign the subjects and classes a teacher is responsible for. Those assignments are what the backend later enforces. | **Accounts** — every login in the system, with its role, and a switch to disable an account without deleting it. |
+
+### Teacher workspace
+
+| | |
+|---|---|
+| ![Teacher dashboard](docs/screenshots/07-teacher-dashboard.png) | ![Attendance](docs/screenshots/08-teacher-attendance.png) |
+| **Dashboard** — only the teacher's own classes, subjects and students. | **Attendance** — mark a whole class in one request, with an optional note per student. |
+| ![Grades](docs/screenshots/09-teacher-grades.png) | ![Observations](docs/screenshots/10-teacher-observations.png) |
+| **Grades** — record against an assessment (which supplies the subject, maximum and semester), then filter and page through them. A teacher may edit or delete only the grades they recorded. | **Observations** — feedback shared with parents, or a private staff-only note. Only the shared ones ever reach the parent portal. |
+
+### Parent portal
+
+| | |
+|---|---|
+| ![Parent dashboard](docs/screenshots/11-parent-dashboard.png) | ![Child detail](docs/screenshots/12-parent-child.png) |
+| **Dashboard** — a summary for the children linked to this parent, and nobody else's. | **Child detail** — averages by subject and semester, the term trend, the full attendance record, every grade, upcoming assessments and teacher feedback. |
+
+### Communication
+
+| | |
+|---|---|
+| ![Notifications](docs/screenshots/13-notifications.png) | ![Announcements](docs/screenshots/06-announcements.png) |
+| **Notifications** — raised by real events (a new grade, an absence, shared feedback, an announcement), scoped to the signed-in user, with unread counts and mark-as-read. | **Announcements** — administrators publish to everyone, all parents, all teachers, a class or a single user; everyone targeted is notified. The composer is admin-only, and `GET /api/announcements` returns `403` to anyone else. |
 
 ## Future improvements
 
-- Expanded **Angular** screens: management CRUD, teacher grade/attendance entry,
-  notifications & announcements UI, search/pagination.
 - **CI/CD** pipeline and containerised deployment.
 - Database **migrations** (Flyway/Liquibase) instead of `ddl-auto`.
 - Optional email/SMS/push notification channels.
@@ -354,9 +413,11 @@ myga_learning-main/
 │       ├── security/     JWT filter, config, user details
 │       ├── exception/    global error handling
 │       └── config/       startup data (admin seed)
+├── docs/           screenshots + the demo-data seeding script
 └── frontend/       Angular 19 single-page app
     └── src/app/
         ├── core/     services, guards, interceptor, models
-        ├── features/ login + admin/teacher/parent dashboards
+        ├── features/ login, dashboards, admin management, teacher workspace,
+        │             parent portal, notifications, announcements
         └── shared/   layout shell
 ```
