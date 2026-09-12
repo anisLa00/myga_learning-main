@@ -20,3 +20,8 @@ export interface AuthUser {
   nom?: string;
   prenom?: string;
 }
+
+export interface ChangePasswordRequest {
+  currentPassword: string;
+  newPassword: string;
+}

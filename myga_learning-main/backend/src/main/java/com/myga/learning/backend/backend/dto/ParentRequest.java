@@ -29,6 +29,6 @@ public class ParentRequest {
      * provisioned for this parent (email as username). Omit for a
      * domain-only parent record with no login.
      */
-    @Size(min = 6, message = "password must be at least 6 characters")
+    @Size(min = 8, message = "password must be at least 8 characters")
     private String password;
 }

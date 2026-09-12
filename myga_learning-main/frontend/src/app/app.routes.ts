@@ -19,6 +19,7 @@ import { TeacherAssessmentsComponent } from './features/teacher/work/assessments
 import { ParentChildComponent } from './features/parent/detail/child-page.component';
 import { NotificationsComponent } from './features/shared/notifications-page.component';
 import { AnnouncementsComponent } from './features/shared/announcements-page.component';
+import { AccountComponent } from './features/account/account-page.component';
 
 const adminOnly = [roleGuard(['ADMIN'])];
 const teacherOnly = [roleGuard(['TEACHER'])];
@@ -49,6 +50,7 @@ export const routes: Routes = [
       // Available to every signed-in role; the backend scopes the content.
       { path: 'notifications', component: NotificationsComponent },
       { path: 'announcements', component: AnnouncementsComponent },
+      { path: 'account', component: AccountComponent },
       { path: '', pathMatch: 'full', component: HomeRedirectComponent },
     ],
   },

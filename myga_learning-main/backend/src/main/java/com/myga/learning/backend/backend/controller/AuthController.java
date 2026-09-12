@@ -1,5 +1,6 @@
 package com.myga.learning.backend.backend.controller;
 
+import com.myga.learning.backend.backend.dto.ChangePasswordRequest;
 import com.myga.learning.backend.backend.dto.LoginRequest;
 import com.myga.learning.backend.backend.dto.LoginResponse;
 import com.myga.learning.backend.backend.service.AuthService;
@@ -23,5 +24,15 @@ public class AuthController {
     @PostMapping("/login")
     public LoginResponse login(@Valid @RequestBody LoginRequest request) {
         return authService.login(request);
+    }
+
+    /**
+     * Changes the caller's own password and returns a fresh token; every token
+     * issued earlier stops working. Requires authentication - see SecurityConfig,
+     * where this path is carved out of the otherwise public /api/auth/** rule.
+     */
+    @PostMapping("/change-password")
+    public LoginResponse changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        return authService.changePassword(request);
     }
 }

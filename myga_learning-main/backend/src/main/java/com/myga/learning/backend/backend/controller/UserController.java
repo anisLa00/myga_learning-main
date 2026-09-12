@@ -1,5 +1,6 @@
 package com.myga.learning.backend.backend.controller;
 
+import com.myga.learning.backend.backend.dto.ResetPasswordRequest;
 import com.myga.learning.backend.backend.dto.UserResponse;
 import com.myga.learning.backend.backend.dto.UserStatusRequest;
 import com.myga.learning.backend.backend.models.Role;
@@ -40,5 +41,15 @@ public class UserController {
     @PutMapping("/{id}/status")
     public UserResponse setStatus(@PathVariable Long id, @Valid @RequestBody UserStatusRequest request) {
         return userService.setEnabled(id, request.getEnabled());
+    }
+
+    /**
+     * Set a new password for an account. This is how a locked-out teacher or
+     * parent gets back in: there is no self-service reset, because there is no
+     * public account flow at all.
+     */
+    @PutMapping("/{id}/password")
+    public UserResponse resetPassword(@PathVariable Long id, @Valid @RequestBody ResetPasswordRequest request) {
+        return userService.resetPassword(id, request.getNewPassword());
     }
 }

@@ -17,6 +17,8 @@ import java.util.function.Function;
 @Service
 public class JwtService {
 
+    private static final String PASSWORD_VERSION_CLAIM = "pv";
+
     private final SecretKey key;
     private final long expirationMs;
 
@@ -26,11 +28,13 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generateToken(UserDetails userDetails, String role) {
+    /** The password version is stamped into the token so it can be invalidated. */
+    public String generateToken(UserDetails userDetails, String role, int passwordVersion) {
         Date now = new Date();
         return Jwts.builder()
                 .setSubject(userDetails.getUsername())
                 .claim("role", role)
+                .claim(PASSWORD_VERSION_CLAIM, passwordVersion)
                 .setIssuedAt(now)
                 .setExpiration(new Date(now.getTime() + expirationMs))
                 .signWith(key, SignatureAlgorithm.HS256)
@@ -43,7 +47,24 @@ public class JwtService {
 
     public boolean isTokenValid(String token, UserDetails userDetails) {
         final String username = extractUsername(token);
-        return username.equals(userDetails.getUsername()) && !isExpired(token);
+        return username.equals(userDetails.getUsername())
+                && !isExpired(token)
+                && matchesPasswordVersion(token, userDetails);
+    }
+
+    /**
+     * A token is only good for the password it was issued under. Changing or
+     * resetting the password bumps the account's version, which leaves every
+     * token stamped with an earlier one invalid - immediately, and with no
+     * dependence on clock resolution.
+     */
+    private boolean matchesPasswordVersion(String token, UserDetails userDetails) {
+        if (!(userDetails instanceof AuthenticatedUser)) {
+            return true;
+        }
+        Integer tokenVersion = extractClaim(token, claims -> claims.get(PASSWORD_VERSION_CLAIM, Integer.class));
+        int current = ((AuthenticatedUser) userDetails).getPasswordVersion();
+        return (tokenVersion == null ? 0 : tokenVersion) == current;
     }
 
     private boolean isExpired(String token) {

@@ -75,4 +75,9 @@ export class AdminService {
   setUserStatus(id: number, enabled: boolean) {
     return this.http.put<UserResponse>(`${this.base}/users/${id}/status`, { enabled });
   }
+
+  /** Admin-set password for a locked-out account. */
+  resetUserPassword(id: number, newPassword: string) {
+    return this.http.put<UserResponse>(`${this.base}/users/${id}/password`, { newPassword });
+  }
 }

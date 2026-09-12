@@ -46,4 +46,19 @@ public class User {
     /** Lets an administrator disable/enable an account without deleting it. */
     @Column(nullable = false)
     private boolean enabled = true;
+
+    /**
+     * Bumped every time the password changes. Each token carries the version it
+     * was issued under, so changing (or resetting) a password instantly ends
+     * every session opened with the old one. A timestamp cannot do this job:
+     * the JWT issued-at claim only has one-second resolution, so a token minted
+     * in the same second as the change would slip through.
+     * <p>Null on rows created before this column existed; treated as 0.
+     */
+    private Integer passwordVersion;
+
+    /** Null-safe view of {@link #passwordVersion}. */
+    public int currentPasswordVersion() {
+        return passwordVersion == null ? 0 : passwordVersion;
+    }
 }

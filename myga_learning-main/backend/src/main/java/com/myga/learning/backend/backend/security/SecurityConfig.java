@@ -45,6 +45,9 @@ public class SecurityConfig {
                 .cors().and()
                 .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS).and()
                 .authorizeRequests()
+                    // Specific first: changing your own password needs a valid
+                    // session, even though the rest of /api/auth is public.
+                    .antMatchers(HttpMethod.POST, "/api/auth/change-password").authenticated()
                     .antMatchers("/api/auth/**").permitAll()
                     .antMatchers("/h2-console/**").permitAll()
                     // API documentation.

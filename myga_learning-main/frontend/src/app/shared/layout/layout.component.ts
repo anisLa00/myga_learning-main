@@ -14,10 +14,10 @@ import { NotificationService } from '../../core/services/notification.service';
       <span class="brand">MYGA Learning</span>
       <span class="spacer"></span>
       @if (auth.user(); as user) {
-        <span class="who">
+        <a class="who" routerLink="/account" title="My account">
           {{ user.prenom }} {{ user.nom }}
           <span class="role">{{ user.role }}</span>
-        </span>
+        </a>
       }
       <a class="bell" routerLink="/notifications" title="Notifications">
         🔔
@@ -67,7 +67,8 @@ import { NotificationService } from '../../core/services/notification.service';
               background: #1e3a8a; color: #fff; }
     .brand { font-weight: 600; }
     .spacer { flex: 1; }
-    .who { font-size: .85rem; opacity: .95; }
+    .who { font-size: .85rem; opacity: .95; color: inherit; text-decoration: none; }
+    .who:hover { text-decoration: underline; }
     .role { background: rgba(255,255,255,.2); border-radius: 999px; padding: .1rem .5rem; margin-left: .4rem; font-size: .7rem; }
     .logout { background: #fff; color: #1e3a8a; border: 0; border-radius: 8px; padding: .4rem .8rem; cursor: pointer; }
     .bell { position: relative; text-decoration: none; font-size: 1.1rem; padding: .2rem .35rem; }

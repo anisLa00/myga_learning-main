@@ -75,6 +75,10 @@ There is deliberately **no `STUDENT` role**.
 - 📊 **Role dashboards** with real aggregates (totals, recent activity, upcoming assessments, attendance %).
 - 🔎 **Pagination and filtering** on the student listing and the staff grade search.
 - 👤 **Account administration**: list users, and enable/disable a login without deleting it.
+- 🔑 **Password management**: a user changes their own password (proving they know
+  the current one), and an administrator can set a new one for a locked-out
+  teacher or parent. Either way every token issued under the old password stops
+  working immediately.
 - 🖥️ **Angular front end**: login and role-based dashboards, admin management
   screens, the teacher workspace (attendance, grades, assessments, observations),
   the parent portal, notifications and announcements — behind a JWT HTTP
@@ -177,6 +181,22 @@ semester**, so the two can never disagree.
     `ADMIN` **or** an assigned `TEACHER` may create.
   - Sensitive reads (a student's grades/attendance/observations) run an
     **ownership check** in the service layer.
+
+### Passwords
+
+- `POST /api/auth/change-password` changes the caller's **own** password and
+  requires the current one, so a stolen token alone cannot take an account over.
+  It is the one path under `/api/auth/**` that requires authentication.
+- `PUT /api/users/{id}/password` lets an **administrator** set a new password
+  for someone else. That is the deliberate recovery route: since no one signs
+  themselves up, no one resets their own password by email either.
+- Both **end every other session at once**. Each account carries a password
+  version that every token is stamped with; changing the password bumps it and
+  leaves older tokens invalid. A timestamp could not do this job — the JWT
+  issued-at claim only has one-second resolution, so a token minted in the same
+  second as the change would slip through.
+- A password change hands back a fresh token, so the user who made the change
+  stays signed in while everyone else holding an old token does not.
 
 A default administrator is **seeded on first start** if no admin exists (see
 [Environment configuration](#environment-configuration)):
@@ -285,6 +305,7 @@ The summary below lists the main routes. All paths are prefixed with `/api`.
 | Method | Path | Access | Description |
 |--------|------|--------|-------------|
 | POST | `/auth/login` | public | Authenticate, returns a JWT + user info |
+| POST | `/auth/change-password` | 🔒 any role | Change your own password; returns a fresh token and invalidates older ones |
 
 ### Students · Parents · Classes · Subjects · Teachers
 | Method | Path | Access | Description |
@@ -314,6 +335,14 @@ The summary below lists the main routes. All paths are prefixed with `/api`.
 | POST | `/observations` | 🔒 ADMIN or assigned TEACHER | Record an observation |
 | GET | `/students/{id}/observations` | 🔒 ownership + visibility | Observations (parents see visible only) |
 
+### Accounts
+
+| Method | Path | Access | Description |
+|--------|------|--------|-------------|
+| GET | `/users`, `/users/{id}` | 🔒 ADMIN | List / get logins (filter with `?role=`) |
+| PUT | `/users/{id}/status` | 🔒 ADMIN | Enable or disable a login |
+| PUT | `/users/{id}/password` | 🔒 ADMIN | Set a new password for a locked-out account |
+
 ### Announcements · Notifications · Portals
 | Method | Path | Access | Description |
 |--------|------|--------|-------------|
@@ -338,8 +367,9 @@ cd backend
 ./mvnw test
 ```
 
-The suite prioritises security and business logic — authentication, role
-authorization, parent-child and teacher-assignment ownership (IDOR attempts),
+The 63 tests prioritise security and business logic — authentication, password
+change and reset (including that older tokens stop working), role authorization,
+parent-child and teacher-assignment ownership (IDOR attempts),
 grade/attendance/observation creation rules, and announcement/notification
 fan-out.
 
@@ -360,7 +390,7 @@ pull request:
 
 | Job | What it does |
 |-----|--------------|
-| **Backend** | `./mvnw test` on JDK 21 — the full suite; the surefire reports are uploaded when it fails. |
+| **Backend** | `./mvnw test` on JDK 21 — all 63 tests; the surefire reports are uploaded when it fails. |
 | **Frontend** | `npm ci`, the unit tests on headless Chrome, then a production build. |
 | **API smoke test** | Packages the jar, starts it, waits for the API to answer, then runs `docs/seed-demo-data.js` against it — an end-to-end pass over authentication, the academic structure, assessments, grades, attendance, feedback and announcements. |
 
@@ -406,6 +436,13 @@ cannot be used to find out which email addresses exist.
 | ![Parent dashboard](docs/screenshots/11-parent-dashboard.png) | ![Child detail](docs/screenshots/12-parent-child.png) |
 | **Dashboard** — a summary for the children linked to this parent, and nobody else's. | **Child detail** — averages by subject and semester, the term trend, the full attendance record, every grade, upcoming assessments and teacher feedback. |
 
+### Accounts and passwords
+
+| | |
+|---|---|
+| ![My account](docs/screenshots/14-account-password.png) | ![Admin password reset](docs/screenshots/15-admin-reset-password.png) |
+| **My account** — any signed-in user changes their own password. The current one is required, the new one is confirmed, and the change signs out every other device. | **Accounts** — an administrator sets a new password for a locked-out teacher or parent. There is no self-service reset, because there is no public account flow at all. |
+
 ### Communication
 
 | | |
@@ -443,6 +480,6 @@ myga_learning-main/
     └── src/app/
         ├── core/     services, guards, interceptor, models
         ├── features/ login, dashboards, admin management, teacher workspace,
-        │             parent portal, notifications, announcements
+        │             parent portal, account/password, notifications, announcements
         └── shared/   layout shell
 ```

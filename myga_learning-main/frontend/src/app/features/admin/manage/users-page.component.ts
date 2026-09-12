@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, OnInit, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { AdminService } from '../../../core/services/admin.service';
 import { UserResponse } from '../../../core/models/domain.models';
 import { AuthService } from '../../../core/services/auth.service';
@@ -7,10 +8,16 @@ import { AuthService } from '../../../core/services/auth.service';
 @Component({
   selector: 'app-manage-users',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   template: `
     <h1>Accounts</h1>
     <p class="muted small">Disabling an account blocks login without deleting any history. You cannot disable your own account.</p>
+    <p class="muted small">
+      There is no self-service password reset, by design. When someone is locked out,
+      set a new password here and pass it on; every session they had open ends at once.
+    </p>
+
+    @if (resetDone()) { <div class="notice">New password set for {{ resetDone() }}.</div> }
 
     @if (loading()) {
       <p class="muted">Loading…</p>
@@ -35,8 +42,23 @@ import { AuthService } from '../../../core/services/auth.service';
                 } @else {
                   <span class="muted small">you</span>
                 }
+                <button class="ghost" (click)="startReset(u)">Reset password</button>
               </td>
             </tr>
+            @if (resetting()?.id === u.id) {
+              <tr>
+                <td colspan="5">
+                  <div class="assign">
+                    <label class="inline">
+                      New password for {{ u.email }}
+                      <input type="text" [(ngModel)]="newPassword" placeholder="at least 8 characters" />
+                    </label>
+                    <button class="ghost" (click)="confirmReset(u)" [disabled]="newPassword.length < 8">Set password</button>
+                    <button class="ghost" (click)="cancelReset()">Cancel</button>
+                  </div>
+                </td>
+              </tr>
+            }
           }
         </tbody>
       </table>
@@ -50,6 +72,9 @@ export class ManageUsersComponent implements OnInit {
   readonly items = signal<UserResponse[]>([]);
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  readonly resetting = signal<UserResponse | null>(null);
+  readonly resetDone = signal<string | null>(null);
+  newPassword = '';
 
   ngOnInit(): void { this.load(); }
 
@@ -58,6 +83,28 @@ export class ManageUsersComponent implements OnInit {
     this.api.users().subscribe({
       next: (u) => { this.items.set(u); this.loading.set(false); },
       error: () => { this.error.set('Could not load accounts.'); this.loading.set(false); },
+    });
+  }
+
+  startReset(u: UserResponse): void {
+    this.newPassword = '';
+    this.resetDone.set(null);
+    this.resetting.set(u);
+  }
+
+  cancelReset(): void {
+    this.resetting.set(null);
+    this.newPassword = '';
+  }
+
+  confirmReset(u: UserResponse): void {
+    this.api.resetUserPassword(u.id, this.newPassword).subscribe({
+      next: () => {
+        this.error.set(null);
+        this.resetDone.set(u.email);
+        this.cancelReset();
+      },
+      error: (e) => this.error.set(e?.error?.message ?? 'Could not reset the password.'),
     });
   }
 

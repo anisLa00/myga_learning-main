@@ -2,7 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Observable, tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { AuthUser, LoginRequest, LoginResponse, Role } from '../models/auth.models';
+import { AuthUser, ChangePasswordRequest, LoginRequest, LoginResponse, Role } from '../models/auth.models';
 
 const TOKEN_KEY = 'myga.token';
 const USER_KEY = 'myga.user';
@@ -24,6 +24,16 @@ export class AuthService {
         this.setStoredUser(user);
         this._user.set(user);
       })
+    );
+  }
+
+  /**
+   * Changes the signed-in user's own password. The API invalidates every token
+   * issued under the old one, so the fresh token it returns replaces ours.
+   */
+  changePassword(payload: ChangePasswordRequest): Observable<LoginResponse> {
+    return this.http.post<LoginResponse>(`${environment.apiUrl}/auth/change-password`, payload).pipe(
+      tap((res) => this.setToken(res.accessToken))
     );
   }
 

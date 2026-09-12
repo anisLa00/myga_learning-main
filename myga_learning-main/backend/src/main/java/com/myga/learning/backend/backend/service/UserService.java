@@ -5,23 +5,28 @@ import com.myga.learning.backend.backend.exception.ResourceNotFoundException;
 import com.myga.learning.backend.backend.models.Role;
 import com.myga.learning.backend.backend.models.User;
 import com.myga.learning.backend.backend.repositories.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
-/** Account administration: listing and enabling/disabling logins. */
+/** Account administration: listing logins, enabling/disabling, resetting passwords. */
 @Service
 @Transactional
 public class UserService {
 
     private final UserRepository userRepository;
     private final CurrentUserService currentUserService;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, CurrentUserService currentUserService) {
+    public UserService(UserRepository userRepository,
+                       CurrentUserService currentUserService,
+                       PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.currentUserService = currentUserService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -45,6 +50,18 @@ public class UserService {
             throw new IllegalArgumentException("You cannot disable your own account");
         }
         user.setEnabled(enabled);
+        return toResponse(userRepository.save(user));
+    }
+
+    /**
+     * Sets a new password for an account on an administrator's behalf — the
+     * recovery path for a locked-out teacher or parent. Any session opened
+     * with the old password stops working immediately.
+     */
+    public UserResponse resetPassword(Long id, String newPassword) {
+        User user = getUserOrThrow(id);
+        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPasswordVersion(user.currentPasswordVersion() + 1);
         return toResponse(userRepository.save(user));
     }
 
